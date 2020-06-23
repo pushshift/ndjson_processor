@@ -21,7 +21,12 @@ def process_chunk(q):
             # Do something with each JSON
 
 
+# Number of workers to spawn
 THREADS = 8
+
+# CHUNK_SIZE should be a size approximately 100x larger than the average json object size
+CHUNK_SIZE = 4096 * 128
+
 q = mp.Manager().Queue(THREADS * 4)
 workers = []
 
@@ -34,7 +39,7 @@ buf = b''
 
 while True:
 
-    data = sys.stdin.buffer.read(4096*256)
+    data = sys.stdin.buffer.read(CHUNK_SIZE)
     pos = data.rfind(b'\n')
     chunk = buf + data[0:pos]
     buf = data[pos+1:]
