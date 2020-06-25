@@ -7,7 +7,6 @@ import ujson as json
 
 
 def process_chunk(q):
-
     while True:
         chunk = q.get()
 
@@ -22,7 +21,7 @@ def process_chunk(q):
 
 
 # Number of workers to spawn
-THREADS = 8
+THREADS = mp.cpu_count()
 
 # CHUNK_SIZE should be a size approximately 100x larger than the average json object size
 CHUNK_SIZE = 4096 * 128
@@ -38,15 +37,22 @@ for i in range(THREADS):
 buf = b''
 
 while True:
-
     data = sys.stdin.buffer.read(CHUNK_SIZE)
+    if not data:
+        break
+
     pos = data.rfind(b'\n')
+    if pos == -1:  # didn't find a newline yet
+        # TODO: how big can a json object be? if 'buf' becomes too large, start persisting?
+        buf = buf + data
+        continue  # go read more
+
     chunk = buf + data[0:pos]
     buf = data[pos+1:]
     q.put(chunk)
 
-    if not data:
-        break
+if len(data) != 0:
+    print("partial json in the data stream : " + str(data))
 
 for x in range(THREADS):
     q.put(None)
